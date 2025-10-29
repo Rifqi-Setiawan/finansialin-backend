@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Env
+.env
+.env.*.local
+
+# Build output
+dist/
+build/
+tmp/
+temp/
+
+# Prisma
+prisma/*.db
+prisma/migrations/
+.prisma/
+
+# Logs
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# VSCode settings (opsional)
+.vscode/

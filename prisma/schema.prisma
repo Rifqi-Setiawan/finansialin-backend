@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Budget {
+  idBudget      Int             @id @default(autoincrement())
+  idUser        Int?
+  idCategory    Int?
+  periodStart   DateTime?       @db.Date
+  periodEnd     DateTime?       @db.Date
+  amount        Float?
+  Category      Category?       @relation(fields: [idCategory], references: [idCategory], onDelete: NoAction, onUpdate: NoAction, map: "fk_budget_category")
+  User          User?           @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction, map: "fk_budget_user")
+  ReportService ReportService[]
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model Category {
+  idCategory                                      Int           @id @default(autoincrement())
+  idTransaction                                   Int?
+  name                                            String?
+  Budget                                          Budget[]
+  Transaction_Category_idTransactionToTransaction Transaction?  @relation("Category_idTransactionToTransaction", fields: [idTransaction], references: [idTransaction], onDelete: NoAction, onUpdate: NoAction, map: "fk_category_transaction")
+  Transaction_Transaction_idCategoryToCategory    Transaction[] @relation("Transaction_idCategoryToCategory")
+}
+
+model MonthlyReport {
+  id             Int             @id @default(autoincrement())
+  totalIncome    Float?
+  totalExpense   Float?
+  closingBalance Float?
+  ReportService  ReportService[]
+}
+
+model Notification {
+  idNotification Int       @id @default(autoincrement())
+  idUser         Int?
+  type           String?
+  read           Boolean?
+  createdAt      DateTime? @db.Timestamp(6)
+  User           User?     @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction, map: "fk_notification_user")
+}
+
+model ReportService {
+  idReportService Int            @id @default(autoincrement())
+  idBudget        Int?
+  idUser          Int?
+  idMonthlyReport Int?
+  type            String?
+  read            Boolean?
+  createdAt       DateTime?      @db.Timestamp(6)
+  Budget          Budget?        @relation(fields: [idBudget], references: [idBudget], onDelete: NoAction, onUpdate: NoAction, map: "fk_reportservice_budget")
+  MonthlyReport   MonthlyReport? @relation(fields: [idMonthlyReport], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_reportservice_monthlyreport")
+  User            User?          @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction, map: "fk_reportservice_user")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model Transaction {
+  idTransaction                                Int        @id @default(autoincrement())
+  idUser                                       Int?
+  idCategory                                   Int?
+  amount                                       Float?
+  description                                  String?
+  date                                         DateTime?  @db.Timestamp(6)
+  source                                       String?
+  Category_Category_idTransactionToTransaction Category[] @relation("Category_idTransactionToTransaction")
+  Category_Transaction_idCategoryToCategory    Category?  @relation("Transaction_idCategoryToCategory", fields: [idCategory], references: [idCategory], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_category")
+  User                                         User?      @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_user")
+}
+
+model User {
+  idUser        Int             @id @default(autoincrement())
+  name          String?
+  email         String?
+  password      String?
+  createdAt     DateTime?       @db.Timestamp(6)
+  Budget        Budget[]
+  Notification  Notification[]
+  ReportService ReportService[]
+  Transaction   Transaction[]
+}

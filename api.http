@@ -1,0 +1,44 @@
+### Register User
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "Password123!",
+  "name": "John Doe"
+}
+
+###
+
+### Login User
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "Password123!"
+}
+
+###
+
+### Refresh Token
+POST http://localhost:3000/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+###
+
+### Get Profile (Protected)
+GET http://localhost:3000/api/auth/profile
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+### Logout (Protected)
+POST http://localhost:3000/api/auth/logout
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###

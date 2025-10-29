@@ -7,80 +7,130 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Budget {
-  idBudget      Int             @id @default(autoincrement())
-  idUser        Int?
-  idCategory    Int?
-  periodStart   DateTime?       @db.Date
-  periodEnd     DateTime?       @db.Date
-  amount        Float?
-  Category      Category?       @relation(fields: [idCategory], references: [idCategory], onDelete: NoAction, onUpdate: NoAction, map: "fk_budget_category")
-  User          User?           @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction, map: "fk_budget_user")
-  ReportService ReportService[]
+model User {
+  /// PK
+  idUser     Int       @id @default(autoincrement()) @map("idUser")
+
+  /// credentials & profil
+  email      String    @unique @map("email")
+  password   String    @map("password")            // simpan bcrypt hash
+  name       String?   @map("name")
+
+  /// audit
+  createdAt  DateTime  @default(now()) @map("createdAt")
+
+  /// relations
+  transactions Transaction[]
+  budgets      Budget[]
+  notifications Notification[]
+  categories    Category[]     @relation("UserCategories")
+  reports       Report[]
+
+  @@map("User")
 }
 
-/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
 model Category {
-  idCategory                                      Int           @id @default(autoincrement())
-  idTransaction                                   Int?
-  name                                            String?
-  Budget                                          Budget[]
-  Transaction_Category_idTransactionToTransaction Transaction?  @relation("Category_idTransactionToTransaction", fields: [idTransaction], references: [idTransaction], onDelete: NoAction, onUpdate: NoAction, map: "fk_category_transaction")
-  Transaction_Transaction_idCategoryToCategory    Transaction[] @relation("Transaction_idCategoryToCategory")
+  idCategory  Int      @id @default(autoincrement()) @map("idCategory")
+
+  /// Nama kategori (mis. Food, Transport, Salary)
+  name        String   @map("name")
+
+  /// Optional: kategori milik user tertentu; jika null → kategori global
+  idUser      Int?     @map("idUser")
+  owner       User?    @relation("UserCategories", fields: [idUser], references: [idUser])
+
+  /// Relasi ke transaksi/budget
+  transactions Transaction[]
+  budgets      Budget[]
+
+  createdAt   DateTime @default(now()) @map("createdAt")
+
+  @@index([idUser], map: "idx_category_user")
+  @@map("Category")
 }
 
-model MonthlyReport {
-  id             Int             @id @default(autoincrement())
-  totalIncome    Float?
-  totalExpense   Float?
-  closingBalance Float?
-  ReportService  ReportService[]
+model Transaction {
+  idTransaction Int       @id @default(autoincrement()) @map("idTransaction")
+
+  /// FK → User
+  idUser        Int       @map("idUser")
+  user          User      @relation(fields: [idUser], references: [idUser])
+
+  /// FK → Category (boleh null jika uncategorized)
+  idCategory    Int?      @map("idCategory")
+  category      Category? @relation(fields: [idCategory], references: [idCategory])
+
+  /// Detail transaksi
+  type          String    @map("type")                  // "income" | "expense" (atau bebas)
+  amount        Decimal   @db.Numeric(18, 2) @map("amount")
+  description   String?   @map("description")
+  date          DateTime  @map("date")
+  source        String?   @map("source")                // cash, bank, e-wallet, dsb.
+
+  createdAt     DateTime  @default(now())  @map("createdAt")
+  updatedAt     DateTime  @updatedAt       @map("updatedAt")
+
+  @@index([idUser, date], map: "idx_tx_user_date")
+  @@index([idCategory], map: "idx_tx_category")
+  @@map("Transaction")
+}
+
+model Budget {
+  idBudget     Int       @id @default(autoincrement()) @map("idBudget")
+
+  /// FK → User (pemilik budget)
+  idUser      Int        @map("idUser")
+  user        User       @relation(fields: [idUser], references: [idUser])
+
+  /// FK → Category (boleh null untuk "overall budget")
+  idCategory  Int?       @map("idCategory")
+  category    Category?  @relation(fields: [idCategory], references: [idCategory])
+
+  /// Periode & batas
+  periodStart DateTime   @map("periodStart")
+  periodEnd   DateTime   @map("periodEnd")
+  amount      Decimal    @db.Numeric(18, 2) @map("amount")
+
+  createdAt   DateTime   @default(now()) @map("createdAt")
+
+  @@index([idUser, periodStart, periodEnd], map: "idx_budget_user_period")
+  @@index([idCategory], map: "idx_budget_category")
+  @@map("Budget")
 }
 
 model Notification {
-  idNotification Int       @id @default(autoincrement())
-  idUser         Int?
-  type           String?
-  read           Boolean?
-  createdAt      DateTime? @db.Timestamp(6)
-  User           User?     @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction, map: "fk_notification_user")
+  idNotification Int      @id @default(autoincrement()) @map("idNotification")
+
+  /// FK → User
+  idUser        Int       @map("idUser")
+  user          User      @relation(fields: [idUser], references: [idUser])
+
+  /// Konten notifikasi
+  type          String    @map("type")                  // mis: "BUDGET_NEAR_LIMIT"
+  read          Boolean   @default(false) @map("read")
+  message       String?   @map("message")
+
+  createdAt     DateTime  @default(now()) @map("createdAt")
+
+  @@index([idUser, read], map: "idx_notification_user_read")
+  @@map("Notification")
 }
 
-model ReportService {
-  idReportService Int            @id @default(autoincrement())
-  idBudget        Int?
-  idUser          Int?
-  idMonthlyReport Int?
-  type            String?
-  read            Boolean?
-  createdAt       DateTime?      @db.Timestamp(6)
-  Budget          Budget?        @relation(fields: [idBudget], references: [idBudget], onDelete: NoAction, onUpdate: NoAction, map: "fk_reportservice_budget")
-  MonthlyReport   MonthlyReport? @relation(fields: [idMonthlyReport], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_reportservice_monthlyreport")
-  User            User?          @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction, map: "fk_reportservice_user")
-}
+model Report {
+  idReport   Int      @id @default(autoincrement()) @map("idReport")
 
-/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
-model Transaction {
-  idTransaction                                Int        @id @default(autoincrement())
-  idUser                                       Int?
-  idCategory                                   Int?
-  amount                                       Float?
-  description                                  String?
-  date                                         DateTime?  @db.Timestamp(6)
-  source                                       String?
-  Category_Category_idTransactionToTransaction Category[] @relation("Category_idTransactionToTransaction")
-  Category_Transaction_idCategoryToCategory    Category?  @relation("Transaction_idCategoryToCategory", fields: [idCategory], references: [idCategory], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_category")
-  User                                         User?      @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_user")
-}
+  /// FK → User
+  idUser     Int      @map("idUser")
+  user       User     @relation(fields: [idUser], references: [idUser])
 
-model User {
-  idUser        Int             @id @default(autoincrement())
-  name          String?
-  email         String?
-  password      String?
-  createdAt     DateTime?       @db.Timestamp(6)
-  Budget        Budget[]
-  Notification  Notification[]
-  ReportService ReportService[]
-  Transaction   Transaction[]
+  /// tipe & periode
+  type       String?  @map("type")       // "monthly" | "summary" | dsb.
+  month      Int?     @map("month")      // 1..12 (untuk monthly report)
+  year       Int?     @map("year")       // 4-digit year
+
+  read       Boolean  @default(false) @map("read")
+  createdAt  DateTime @default(now()) @map("createdAt")
+
+  @@index([idUser, year, month], map: "idx_report_user_period")
+  @@map("ReportService")    // <-- ganti ke "MonthlyReport" jika kamu sudah punya tabel itu
 }

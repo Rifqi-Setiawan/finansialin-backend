@@ -19,7 +19,6 @@ export class UsersService {
         email: true,
         name: true,
         createdAt: true,
-        // Don't select password
       },
     });
 

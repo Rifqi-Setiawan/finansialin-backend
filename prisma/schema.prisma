@@ -61,8 +61,8 @@ model Transaction {
   category      Category? @relation(fields: [idCategory], references: [idCategory])
 
   /// Detail transaksi
-  type          String    @map("type")                  // "income" | "expense" (atau bebas)
-  amount        Decimal   @db.Numeric(18, 2) @map("amount")
+  type          TransactionType @map("type")           // "income" | "expense"
+  amount        Decimal   @map("amount")
   description   String?   @map("description")
   date          DateTime  @map("date")
   source        String?   @map("source")                // cash, bank, e-wallet, dsb.
@@ -73,6 +73,11 @@ model Transaction {
   @@index([idUser, date], map: "idx_tx_user_date")
   @@index([idCategory], map: "idx_tx_category")
   @@map("Transaction")
+}
+
+enum TransactionType {
+  income
+  expense
 }
 
 model Budget {
@@ -89,7 +94,7 @@ model Budget {
   /// Periode & batas
   periodStart DateTime   @map("periodStart")
   periodEnd   DateTime   @map("periodEnd")
-  amount      Decimal    @db.Numeric(18, 2) @map("amount")
+  amount      Decimal    @map("amount")
 
   createdAt   DateTime   @default(now()) @map("createdAt")
 

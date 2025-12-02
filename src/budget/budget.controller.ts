@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, ParseIntPipe, Put, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, ParseIntPipe, Put, Delete, Query, BadRequestException } from '@nestjs/common';
 import { BudgetService } from './budget.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
@@ -38,5 +38,26 @@ export class BudgetController {
   @Get(':id/usage')
   async usage(@CurrentUser() user: any, @Param('id', ParseIntPipe) id: number) {
     return this.budgetService.getUsage(user.idUser, id);
+  }
+
+  /**
+   * GET /budgets/goals?period=monthly&date=2025-11-01&type=expense&idCategory=1
+   */
+  @Get('goals')
+  async goals(
+    @CurrentUser() user: any,
+    @Query('period') period: string,
+    @Query('date') date: string,
+    @Query('type') type: string,
+    @Query('idCategory') idCategory?: string,
+  ) {
+    if (!period) throw new BadRequestException('period is required (daily|weekly|monthly|year)');
+    const txType = type || 'expense';
+    const catId = idCategory ? parseInt(idCategory, 10) : undefined;
+    try {
+      return this.budgetService.getGoals(user.idUser, period, date, txType, catId);
+    } catch (err: any) {
+      throw new BadRequestException(err?.message || 'Invalid request');
+    }
   }
 }

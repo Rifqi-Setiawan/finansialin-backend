@@ -389,6 +389,84 @@ export class CreateTransactionDto {
   @IsIn(['income','expense'])
   type!: 'income' | 'expense';
   @IsNumber()
+## Budget Goals (Analysis)
+
+This endpoint analyzes budgets per category for a selected period and returns how much of the budget is used, whether the category is over budget, and helpful summary values that the frontend can use to render progress bars and alerts.
+
+Base path: `/api/budgets/goals`
+
+Query parameters
+- `period` (required): `daily` | `weekly` | `monthly` | `year` — the period type to analyze
+- `date` (optional): ISO date string representing any day within the requested period. Example: `2025-11-25`. If omitted, current date is used.
+- `type` (optional): `expense` | `income` | `both` — which transaction types to include in the usage calculation. Default: `expense`.
+- `idCategory` (optional): integer — limit analysis to a single category.
+
+Request example
+```http
+GET http://localhost:3000/api/budgets/goals?period=monthly&date=2025-11-01&type=expense
+Authorization: Bearer <ACCESS_TOKEN>
+```
+
+Success Response (200)
+```json
+{
+  "period": {
+    "start": "2025-11-01T00:00:00.000Z",
+    "end": "2025-12-01T00:00:00.000Z",
+    "period": "monthly"
+  },
+  "totals": {
+    "totalBudget": 500.00,
+    "totalSpent": 275.00,
+    "percent": 55
+  },
+  "data": [
+    {
+      "idCategory": 1,
+      "name": "Food",
+      "budgetAmount": 200.00,
+      "spent": 55.00,
+      "percent": 27.5,
+      "overBudget": false,
+      "remaining": 145.00
+    },
+    {
+      "idCategory": 2,
+      "name": "Transport",
+      "budgetAmount": 300.00,
+      "spent": 220.00,
+      "percent": 73.33,
+      "overBudget": false,
+      "remaining": 80.00
+    }
+  ]
+}
+```
+
+Field descriptions
+- `period.start` / `period.end`: ISO timestamps delimiting the analyzed date range.
+- `totals.totalBudget`: sum of all budget amounts that overlap the requested period.
+- `totals.totalSpent`: sum of all transactions (according to `type` filter) in the requested period.
+- `totals.percent`: percent of totalSpent / totalBudget (0 if totalBudget is 0).
+- `data[]`: per-category breakdown:
+  - `idCategory`, `name` — category identity (null for uncategorized)
+  - `budgetAmount` — total budget assigned to that category for the period (0 if none)
+  - `spent` — sum of transaction amounts in the period for this category
+  - `percent` — percent used (rounded to 2 decimals)
+  - `overBudget` — boolean, true if `spent > budgetAmount` (false if budgetAmount === 0)
+  - `remaining` — `budgetAmount - spent` (can be negative)
+
+Error responses
+- `400 Bad Request` — invalid `period` or `date` parameter. Example:
+```json
+{ "statusCode": 400, "message": "Invalid period" }
+```
+
+Notes and suggestions for frontend
+- Use `percent` to render the progress bar width.
+- Use `overBudget` to show prominent warnings (red bar / alert). The frontend screenshot provided shows UI cues (percent used, amount over budget) — the API provides `remaining` (negative means over budget) so the UI can show "Over budget by $-remaining".
+- If you want per-day series for charts, we can add a time-series variant that returns daily aggregates inside the requested period.
+
   @IsPositive()
   amount!: number;
 

@@ -1,4 +1,5 @@
 import { Controller, Post, Body, UseGuards, Get, Param, ParseIntPipe, Put, Delete } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -16,6 +17,21 @@ export class TransactionController {
   @Get()
   async findAll(@CurrentUser() user: any) {
     return this.txService.findAllByUser(user.idUser);
+  }
+
+  @Get('month/:year/:month')
+  async findByMonth(
+    @CurrentUser() user: any,
+    @Param('year', ParseIntPipe) year: number,
+    @Param('month', ParseIntPipe) month: number,
+  ) {
+    try {
+      return this.txService.findByMonth(user.idUser, year, month);
+    } catch (err) {
+      // rethrow BadRequestException for invalid params, otherwise bubble up
+      if (err instanceof BadRequestException) throw err;
+      throw err;
+    }
   }
 
   @Get(':id')

@@ -424,6 +424,43 @@ export class UpdateTransactionDto {
 
 ---
 
+### 6. Get Transactions By Month (GET /transactions/month/:year/:month)
+
+Get all transactions for the current user in a specific year/month. `month` is 1..12.
+
+Request
+```http
+GET http://localhost:3000/api/transactions/month/2025/11
+Authorization: Bearer <ACCESS_TOKEN>
+```
+
+Success Response (200)
+```json
+{
+  "data": [
+    {
+      "idTransaction": 1,
+      "type": "expense",
+      "amount": 150.5,
+      "description": "Grocery shopping",
+      "date": "2025-11-25T10:00:00.000Z",
+      "source": "Cash",
+      "category": { "idCategory": 1, "name": "Food" }
+    }
+  ]
+}
+```
+
+Error Responses
+
+- `400 Bad Request` — invalid year or month parameters
+```json
+{ "statusCode": 400, "message": "Invalid month" }
+```
+
+
+---
+
 ### Quick cURL examples
 
 Create

@@ -48,6 +48,30 @@ export class TransactionService {
     });
   }
 
+  /**
+   * Find transactions for a given user filtered by year and month.
+   * month is 1..12
+   */
+  async findByMonth(userId: number, year: number, month: number) {
+    if (!Number.isInteger(year) || year < 1970) throw new BadRequestException('Invalid year');
+    if (!Number.isInteger(month) || month < 1 || month > 12) throw new BadRequestException('Invalid month');
+
+    // start inclusive, nextMonth start exclusive
+    const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+    const nextMonth = month === 12 ? new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0)) : new Date(Date.UTC(year, month, 1, 0, 0, 0));
+
+    return this.prisma.transaction.findMany({
+      where: {
+        idUser: userId,
+        date: {
+          gte: start,
+          lt: nextMonth,
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+
   async findById(id: number) {
     const tx = await this.prisma.transaction.findUnique({ where: { idTransaction: id } });
     if (!tx) throw new NotFoundException('Transaction not found');

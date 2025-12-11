@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService, NotificationType } from '../notification/notification.service';
 
 @Injectable()
 export class TransactionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async create(userId: number, data: any) {
     // validate category if provided to avoid FK error
@@ -31,6 +35,12 @@ export class TransactionService {
           source: data.source,
         } as any,
       });
+      
+      // Create notification
+      const txType = (tx as any).type === 'income' ? 'Pemasukan' : 'Pengeluaran';
+      const message = `${txType} sebesar Rp${(tx as any).amount.toLocaleString('id-ID')} telah ditambahkan.`;
+      await this.notificationService.create(userId, NotificationType.TRANSACTION_CREATED, message);
+      
       return tx;
     } catch (err: any) {
       // Convert Prisma FK errors to a clearer HTTP error
@@ -116,7 +126,13 @@ export class TransactionService {
   async remove(userId: number, id: number) {
     const tx = await this.findById(id);
     if (tx.idUser !== userId) throw new ForbiddenException('Not allowed');
+    
+    const txType = (tx as any).type === 'income' ? 'Pemasukan' : 'Pengeluaran';
+    const message = `${txType} sebesar Rp${(tx as any).amount.toLocaleString('id-ID')} telah dihapus.`;
+    
     await this.prisma.transaction.delete({ where: { idTransaction: id } });
+    await this.notificationService.create(userId, NotificationType.TRANSACTION_DELETED, message);
+    
     return { message: 'Transaction deleted' };
   }
 }

@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService, NotificationType } from '../notification/notification.service';
 
 @Injectable()
 export class BudgetService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async create(userId: number, data: any) {
     const budget = await this.prisma.budget.create({
@@ -15,6 +19,11 @@ export class BudgetService {
         amount: data.amount,
       } as any,
     });
+    
+    // Create notification
+    const message = `Budget baru sebesar Rp${budget.amount} telah dibuat untuk periode ${new Date(budget.periodStart).toLocaleDateString()} - ${new Date(budget.periodEnd).toLocaleDateString()}.`;
+    await this.notificationService.create(userId, NotificationType.BUDGET_CREATED, message);
+    
     return budget;
   }
 
@@ -159,7 +168,13 @@ export class BudgetService {
   async remove(userId: number, id: number) {
     const bud = await this.findById(id);
     if (bud.idUser !== userId) throw new ForbiddenException('Not allowed');
-    await this.prisma.budget.delete({ where: { idBudget: id } });
+    
+    const deleted = await this.prisma.budget.delete({ where: { idBudget: id } });
+    
+    // Create notification
+    const message = `Budget sebesar Rp${(deleted as any).amount} untuk periode ${new Date((deleted as any).periodStart).toLocaleDateString()} - ${new Date((deleted as any).periodEnd).toLocaleDateString()} telah dihapus.`;
+    await this.notificationService.create(userId, NotificationType.BUDGET_DELETED, message);
+    
     return { message: 'Budget deleted' };
   }
 

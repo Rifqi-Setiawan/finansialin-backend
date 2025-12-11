@@ -24,7 +24,6 @@ model User {
   budgets      Budget[]
   notifications Notification[]
   categories    Category[]     @relation("UserCategories")
-  reports       Report[]
 
   @@map("User")
 }
@@ -119,23 +118,4 @@ model Notification {
 
   @@index([idUser, read], map: "idx_notification_user_read")
   @@map("Notification")
-}
-
-model Report {
-  idReport   Int      @id @default(autoincrement()) @map("idReport")
-
-  /// FK → User
-  idUser     Int      @map("idUser")
-  user       User     @relation(fields: [idUser], references: [idUser])
-
-  /// tipe & periode
-  type       String?  @map("type")       // "monthly" | "summary" | dsb.
-  month      Int?     @map("month")      // 1..12 (untuk monthly report)
-  year       Int?     @map("year")       // 4-digit year
-
-  read       Boolean  @default(false) @map("read")
-  createdAt  DateTime @default(now()) @map("createdAt")
-
-  @@index([idUser, year, month], map: "idx_report_user_period")
-  @@map("ReportService")    // <-- ganti ke "MonthlyReport" jika kamu sudah punya tabel itu
 }

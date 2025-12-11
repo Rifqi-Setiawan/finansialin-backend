@@ -1,5 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Param, ParseIntPipe, Put, Delete } from '@nestjs/common';
-import { BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, ParseIntPipe, Put, Delete } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -19,19 +18,15 @@ export class TransactionController {
     return this.txService.findAllByUser(user.idUser);
   }
 
+  // PENTING: Route spesifik harus didefinisikan SEBELUM route dengan parameter dinamis (:id)
+  // untuk menghindari konflik route dimana 'month' bisa salah diinterpretasi sebagai :id
   @Get('month/:year/:month')
   async findByMonth(
     @CurrentUser() user: any,
     @Param('year', ParseIntPipe) year: number,
     @Param('month', ParseIntPipe) month: number,
   ) {
-    try {
-      return this.txService.findByMonth(user.idUser, year, month);
-    } catch (err) {
-      // rethrow BadRequestException for invalid params, otherwise bubble up
-      if (err instanceof BadRequestException) throw err;
-      throw err;
-    }
+    return this.txService.findByMonth(user.idUser, year, month);
   }
 
   @Get(':id')

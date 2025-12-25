@@ -183,6 +183,15 @@ export class BudgetService {
     const bud = await this.findById(id);
     if (bud.idUser !== userId) throw new ForbiddenException('Not allowed');
 
+    const categoryName = (bud as any).idCategory
+      ? (
+          await this.prisma.category.findUnique({
+            where: { idCategory: (bud as any).idCategory },
+            select: { name: true },
+          })
+        )?.name
+      : undefined;
+
     const where: any = {
       idUser: userId,
       date: { gte: bud.periodStart, lte: bud.periodEnd },
@@ -199,6 +208,18 @@ export class BudgetService {
 
     const used = agg._sum.amount ? Number(agg._sum.amount) : 0;
     const total = Number((bud as any).amount);
-    return { used, total, percent: total > 0 ? (used / total) * 100 : 0 };
+    const percent = total > 0 ? (used / total) * 100 : 0;
+
+    // Trigger notification when overbudget
+    if (total > 0 && used > total) {
+      await this.notificationService.notifyBudgetExceeded(
+        userId,
+        total,
+        used,
+        categoryName,
+      );
+    }
+
+    return { used, total, percent };
   }
 }

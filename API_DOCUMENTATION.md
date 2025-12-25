@@ -929,6 +929,8 @@ Penjelasan:
 - `total`: Batas anggaran yang ditetapkan
 - `percent`: Persentase penggunaan anggaran (0-100)
 
+Catatan: Jika `used` melebihi `total` (percent > 100), sistem otomatis membuat notifikasi dengan tipe `BUDGET_EXCEEDED` untuk pengguna terkait.
+
 ---
 
 ### 7. Ambil Ringkasan Goal Anggaran
@@ -976,6 +978,10 @@ Content-Type: application/json
 ---
 
 ## 🔔 Notifikasi
+
+Notifikasi akan dibuat otomatis oleh backend. Salah satunya adalah kondisi **over budget**:
+- Saat pemanggilan `GET /api/budgets/:id/usage` mendeteksi `used > total`, sistem membuat notifikasi baru dengan `type: "BUDGET_EXCEEDED"` dan pesan berisi ringkasan anggaran yang terlampaui.
+- Notifikasi ini muncul di daftar `/api/notifications` dan dapat ditandai dibaca via endpoint PATCH yang sudah ada.
 
 ### 1. Ambil Semua Notifikasi Pengguna
 

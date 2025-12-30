@@ -18,6 +18,22 @@ export class BudgetController {
     return this.budgetService.findAllByUser(user.idUser);
   }
 
+  @Get('filter')
+  async filter(
+    @CurrentUser() user: any,
+    @Query('period') period: string,
+    @Query('date') date: string,
+    @Query('idCategory') idCategory?: string,
+  ) {
+    if (!period) throw new BadRequestException('period is required (day|week|year)');
+    const catId = idCategory ? parseInt(idCategory, 10) : undefined;
+    try {
+      return await this.budgetService.filterByPeriod(user.idUser, period, date, catId);
+    } catch (err: any) {
+      throw new BadRequestException(err?.message || 'Invalid request');
+    }
+  }
+
   @Get(':id')
   async findOne(@CurrentUser() user: any, @Param('id', ParseIntPipe) id: number) {
     const bud = await this.budgetService.findById(id);

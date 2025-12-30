@@ -9,6 +9,43 @@ export class BudgetService {
     private readonly notificationService: NotificationService,
   ) {}
 
+  async filterByPeriod(userId: number, period: string, dateStr?: string, idCategory?: number) {
+    const date = dateStr ? new Date(dateStr) : new Date();
+    if (isNaN(date.getTime())) throw new Error('Invalid date');
+
+    let start: Date;
+    let end: Date;
+    switch (period) {
+      case 'day':
+        start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0));
+        end = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1, 0, 0, 0));
+        break;
+      case 'week': {
+        const day = date.getUTCDay();
+        const diffToMonday = (day + 6) % 7;
+        const monday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - diffToMonday, 0, 0, 0));
+        start = monday;
+        end = new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 7, 0, 0, 0));
+        break;
+      }
+      case 'year':
+        start = new Date(Date.UTC(date.getUTCFullYear(), 0, 1, 0, 0, 0));
+        end = new Date(Date.UTC(date.getUTCFullYear() + 1, 0, 1, 0, 0, 0));
+        break;
+      default:
+        throw new Error('Invalid period. Use day|week|year');
+    }
+
+    return this.prisma.budget.findMany({
+      where: {
+        idUser: userId,
+        ...(idCategory ? { idCategory } : {}),
+        AND: [{ periodStart: { lte: end } }, { periodEnd: { gte: start } }],
+      },
+      orderBy: { periodStart: 'asc' },
+    });
+  }
+
   async create(userId: number, data: any) {
     const budget = await this.prisma.budget.create({
       data: {

@@ -798,6 +798,44 @@ Content-Type: application/json
 
 ---
 
+### 2a. Ambil Anggaran Berdasarkan Periode & Kategori
+
+**Endpoint:** `GET /api/budgets/filter?period=day&date=2025-12-15&idCategory=1`
+
+**Deskripsi:** Mendapatkan daftar anggaran yang periode-nya beririsan dengan hari/minggu/tahun tertentu dan (opsional) difilter kategori.
+
+**Autentikasi:** **Required** - JWT Bearer Token
+
+**Query Parameters:**
+- `period` (string, required): Nilai: `day`, `week`, `year`
+- `date` (string, optional): Tanggal referensi ISO (YYYY-MM-DD). Default: hari ini.
+- `idCategory` (number, optional): Filter hanya untuk kategori tertentu.
+
+**Request Headers:**
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+```
+
+**Response Sukses (200 OK):**
+```json
+[
+  {
+    "idBudget": 1,
+    "idUser": 1,
+    "idCategory": 1,
+    "periodStart": "2025-12-01T00:00:00.000Z",
+    "periodEnd": "2025-12-31T23:59:59.000Z",
+    "amount": 1000000,
+    "createdAt": "2025-12-11T10:00:00.000Z"
+  }
+]
+```
+
+Penjelasan: hasil berisi semua budget milik pengguna yang periode tanggalnya beririsan dengan rentang hari/minggu/tahun yang dihitung dari `date`. Jika `idCategory` dikirim, hanya anggaran pada kategori tersebut yang dikembalikan.
+
+---
+
 ### 3. Ambil Anggaran Berdasarkan ID
 
 **Endpoint:** `GET /api/budgets/:id`
